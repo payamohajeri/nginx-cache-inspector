@@ -34,6 +34,8 @@ SCRIPTNAME=${0##*/}
 
 function print_usage() {
     echo "$SCRIPTNAME <URI (grep pattern)> <cache directory>."
+    echo "Output format:"
+    echo "cache_file|filesize|ttl|TTL|key";
 }
 
 ## Check the number of arguments.
@@ -67,11 +69,18 @@ function get_cache_item_ttl() {
     od -dL $1 | sed -n '2p' | awk '{print $1 - $2}'
 } # get_cache_item_ttl
 
+## Get a cache item size, all cache headers counted too.
+## $1 - cache file.
+function get_cache_item_size() {
+    du -b $1 | cut -f 1
+} # get_cache_item_size
+
+
 ## Inspects an item from the given cache zone.
 ## $1 - the filename, can be a pattern .
 ## $2 - the cache directory.
 function nginx_cache_inspect_item() {
-    local cache_files key ttl expires
+    local cache_files key ttl expires filesize
 
     [ -d $2 ] || exit 2
     cache_files=$(get_cache_files "$1" $2)
@@ -84,11 +93,12 @@ function nginx_cache_inspect_item() {
             key=$(get_cache_item_key $i)
             if [ -n "$key" ]; then
                 ttl=$(get_cache_item_ttl $i)
+                filesize=$(get_cache_item_size $i)
                 ## If the expire timestamp is negative that means that
                 ## the item is not found or other error.
                 [ $ttl -lt 0 ] && echo "404 Not found" && continue
 #                expires=$(expr $ttl + $(date '+ %s'))      #some wrong in this line in nginx/1.1.17
-                echo "$i|$ttl|$(date '+%d.%m.%Y %T' --date=@$ttl)|$key"
+                echo "$i|$filesize|$ttl|$(date '+%d.%m.%Y %T' --date=@$ttl)|$key"
             fi
         done
     else
