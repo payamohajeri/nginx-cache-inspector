@@ -66,7 +66,7 @@ function get_cache_item_key() {
 ## Get a cache item TTL.
 ## $1 - cache file.
 function get_cache_item_ttl() {
-    od -dL $1 | sed -n '2p' | awk '{print $1 - $2}'
+    od -dL $1 | sed -n '2p' | awk '{print $2}'
 } # get_cache_item_ttl
 
 ## Get a cache item size, all cache headers counted too.
@@ -97,7 +97,6 @@ function nginx_cache_inspect_item() {
                 ## If the expire timestamp is negative that means that
                 ## the item is not found or other error.
                 [ $ttl -lt 0 ] && echo "404 Not found" && continue
-#                expires=$(expr $ttl + $(date '+ %s'))      #some wrong in this line in nginx/1.1.17
                 echo "$i|$filesize|$ttl|$(date '+%d.%m.%Y %T' --date=@$ttl)|$key"
             fi
         done
